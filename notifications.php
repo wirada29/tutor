@@ -293,7 +293,7 @@ foreach ($rows as $r) {
     <div class="sidebar">
         <h2>📘 นักเรียน</h2>
         <a href="dashboard.php"><i class="bi bi-house-fill"></i> หน้าแรก</a>
-        <a href="student.php"><i class="bi bi-person"></i> โปรไฟล์</a>
+        <a href="student.php"><i class="bi bi-person-circle"></i> โปรไฟล์</a>
         <a href="courses.php"><i class="bi bi-journal-bookmark-fill"></i> รายวิชา</a>
         <a href="grades.php"><i class="bi bi-bar-chart-line-fill"></i> ผลการเรียน</a>
         <a href="notifications.php"><i class="bi bi-bell-fill"></i> แจ้งเตือน</a>

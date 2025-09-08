@@ -17,82 +17,115 @@ elseif (isset($_SESSION['name']) || isset($_SESSION['email']) || isset($_SESSION
         'major'      => $_SESSION['major']      ?? '-',
     ];
 } else {
-    // ไม่มี session จริง ๆ → กลับไป login
     header("Location: login.php");
     exit();
 }
 
 $name       = $u['name']       ?? 'ผู้ใช้';
 $email      = $u['email']      ?? '-';
-$role       = $u['role']       ?? 'student';
+$role       = strtolower($u['role'] ?? 'student');
 $student_no = $u['student_no'] ?? '-';
 $class      = $u['class']      ?? '-';
 $major      = $u['major']      ?? '-';
+
+$current = basename($_SERVER['PHP_SELF']); // ใช้ไฮไลท์เมนูปัจจุบัน
 ?>
 <!DOCTYPE html>
 <html lang="th">
 
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>หน้าของนักเรียน</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet" />
     <style>
+        :root {
+            --blue: #3b82f6;
+            --blue-dark: #2563eb;
+            --ink: #0f172a;
+            --muted: #64748b;
+            --bg: #f5f7fa;
+            --surface: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
         body {
             margin: 0;
             font-family: 'Sarabun', sans-serif;
-            background: #f5f7fa;
-            color: #1a202c;
+            background: var(--bg);
+            color: var(--ink);
             display: flex;
-            min-height: 100vh
+            min-height: 100vh;
         }
 
+        /* === Sidebar (เหมือนหน้า dashboard) === */
         .sidebar {
             width: 230px;
-            background: #3b82f6;
+            background: linear-gradient(180deg, var(--blue), var(--blue-dark));
             color: #fff;
             height: 100vh;
-            padding: 25px 15px;
+            padding: 26px 16px;
             position: fixed;
-            top: 0;
-            left: 0;
+            inset: 0 auto 0 0;
+            /* top:0; left:0; bottom:0 */
+            overflow-y: auto;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, .08);
+            border-right: 1px solid rgba(255, 255, 255, .08);
         }
 
         .sidebar h2 {
             font-size: 22px;
             font-weight: 600;
-            margin-bottom: 30px;
+            margin: 0 0 24px;
             text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
         }
 
         .sidebar a {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 10px;
             color: #fff;
             text-decoration: none;
-            border-radius: 8px;
-            margin-bottom: 10px
+            margin-bottom: 12px;
+            padding: 11px 10px;
+            border-radius: 10px;
+            transition: transform .15s, background .2s, opacity .2s;
+            opacity: .95;
         }
 
         .sidebar a:hover {
-            background: #2563eb
+            background: rgba(255, 255, 255, .15);
+            transform: translateY(-1px);
+            opacity: 1;
         }
 
+        .sidebar a.active {
+            background: rgba(255, 255, 255, .22);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
+        }
+
+        /* Main */
         .main {
             flex: 1;
             margin-left: 230px;
-            padding: 28px
+            /* ให้ตรงกับความกว้าง sidebar */
+            padding: 28px 32px;
         }
 
         .card {
-            background: #fff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
-            margin-bottom: 20px
+            background: var(--surface);
+            padding: 22px;
+            border-radius: 16px;
+            box-shadow: 0 6px 24px rgba(15, 23, 42, .06);
+            margin-bottom: 22px;
         }
 
         .pill {
@@ -100,33 +133,50 @@ $major      = $u['major']      ?? '-';
             background: #e2e8f0;
             padding: 6px 12px;
             border-radius: 999px;
-            margin: 2px;
-            font-size: 14px
+            margin: 2px 6px 2px 0;
+            font-size: 14px;
         }
 
-        @media(max-width:768px) {
+        @media (max-width: 992px) {
             .sidebar {
                 position: relative;
                 width: 100%;
-                height: auto
+                height: auto;
+                inset: auto;
             }
 
             .main {
-                margin-left: 0
+                margin-left: 0;
+                padding: 20px;
             }
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 14px;
         }
     </style>
 </head>
 
 <body>
+
+    <!-- Sidebar -->
+    <!-- Sidebar -->
     <div class="sidebar">
-        <h2>📘 นักเรียน</h2>
-        <a href="dashboard.php"><i class="bi bi-house-fill"></i>หน้าแรก</a>
-        <a href="student.php"><i class="bi bi-person-circle"></i> โปรไฟล์นักเรียน</a>
-        <a href="grades.php"><i class="bi bi-bar-chart-line-fill"></i> ผลการเรียน</a>
+        <h2>📘 สถาบันติวเตอร์</h2>
+        <a href="dashboard.php" class="<?= $current === 'dashboard.php' ? 'active' : '' ?>"><i class="bi bi-house-fill"></i> หน้าแรก</a>
+        <a href="student.php" class="<?= $current === 'student.php' ? 'active' : '' ?>"><i class="bi bi-person-circle"></i> นักเรียน</a>
+        <a href="courses.php" class="<?= $current === 'courses.php' ? 'active' : '' ?>"><i class="bi bi-journal-bookmark-fill"></i> รายวิชา</a>
+        <a href="grades.php" class="<?= $current === 'grades.php' ? 'active' : '' ?>"><i class="bi bi-bar-chart-line-fill"></i> ผลการเรียน</a>
+        <a href="notifications.php" class="<?= $current === 'notifications.php' ? 'active' : '' ?>"><i class="bi bi-bell-fill"></i> แจ้งเตือน</a>
+        <?php if ($role === 'admin'): ?>
+            <a href="users.php" class="<?= $current === 'users.php' ? 'active' : '' ?>"><i class="bi bi-people-fill"></i> ผู้ใช้ทั้งหมด</a>
+        <?php endif; ?>
         <a href="logout.php"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</a>
     </div>
 
+
+    <!-- Main -->
     <div class="main">
         <div class="card">
             <h2>👋 สวัสดีคุณ <?= htmlspecialchars($name) ?></h2>
@@ -139,9 +189,10 @@ $major      = $u['major']      ?? '-';
 
         <div class="card">
             <h3>📚 รายวิชาที่ลงทะเบียน</h3>
-            <p>— ยังไม่เชื่อมฐานข้อมูล —</p>
+            <p class="muted">— ยังไม่เชื่อมฐานข้อมูล —</p>
         </div>
     </div>
+
 </body>
 
 </html>
