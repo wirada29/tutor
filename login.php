@@ -2,10 +2,14 @@
 session_start();
 require_once __DIR__ . '/config/db.php'; // ต้องมี $pdo (PDO)
 
+// เก็บค่าที่กรอกไว้เพื่อแสดงกลับ
+$initialRole = strtolower(trim($_POST['role'] ?? 'student'));
+$emailVal    = $_POST['email'] ?? '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email    = trim($_POST['email'] ?? '');
     $password = trim($_POST['password'] ?? '');
-    $roleSel  = strtolower(trim($_POST['role'] ?? 'student')); // บทบาทที่ผู้ใช้เลือกจากหน้าเว็บ
+    $roleSel  = $initialRole; // บทบาทที่เลือกจากฟอร์ม
 
     try {
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
@@ -15,18 +19,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$user) {
             $error = "❌ ไม่พบบัญชีผู้ใช้นี้";
         } else {
-            // เทียบรหัสผ่าน (ตอนนี้เทียบตรง ๆ ตามที่คุณใช้; ถ้าอยากปลอดภัยใช้ password_hash/password_verify ภายหลังได้)
+            // เทียบรหัสผ่านตามระบบเดิม (ยังไม่ hash)
             $passOk = ($password === ($user['password'] ?? ''));
 
             if (!$passOk) {
                 $error = "❌ อีเมลหรือรหัสผ่านไม่ถูกต้อง";
             } else {
-                // เช็คบทบาทที่เลือกให้ตรงกับบทบาทใน DB
                 $roleDb = strtolower($user['role'] ?? 'student');
                 if ($roleSel !== $roleDb) {
                     $error = "⚠️ บทบาทที่เลือกไม่ตรงกับสิทธิ์ในระบบ (คุณคือ '{$roleDb}')";
                 } else {
-                    // Login สำเร็จ: เก็บ session
                     $_SESSION['user'] = [
                         'user_id' => $user['user_id'] ?? ($user['id'] ?? null),
                         'name'    => $user['name']    ?? '',
@@ -34,22 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'role'    => $roleDb
                     ];
 
-                    // ✅ ค่าที่แดชบอร์ดใช้ (คุณเคยใช้แบบนี้)
-                    $_SESSION['behavior_score'] = 92;   // คะแนนประพฤติ (0-100)
-                    $_SESSION['total_score']    = 430;  // คะแนนรวมปัจจุบัน
-                    $_SESSION['total_max']      = 500;  // คะแนนเต็ม
+                    // ค่าโชว์ในแดชบอร์ด (ตามเดิม)
+                    $_SESSION['behavior_score'] = 92;
+                    $_SESSION['total_score']    = 430;
+                    $_SESSION['total_max']      = 500;
 
-                    // 🔀 หากต้องการแยกหน้า landing ตาม role ให้ใช้ switch นี้แทน
-                    /*
-                    switch ($roleDb) {
-                        case 'admin':   header("Location: admin_dashboard.php");   break;
-                        case 'teacher': header("Location: teacher_dashboard.php"); break;
-                        default:        header("Location: dashboard.php");
-                    }
-                    exit();
-                    */
-
-                    // ค่าเริ่มต้น: ใช้แดชบอร์ดเดียวกัน
                     header("Location: dashboard.php");
                     exit();
                 }
@@ -65,8 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <head>
     <meta charset="UTF-8">
-    <title>เข้าสู่ระบบ</title>
+    <title>เข้าสู่ระบบ | สถาบันติวเตอร์</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         :root {
             --c1: #36d1dc;
@@ -74,6 +67,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             --ink: #0f172a;
             --muted: #64748b;
             --card: #ffffff;
+            --ok: #16a34a;
+            --err: #e11d48;
+            --line: #e5e7eb;
         }
 
         * {
@@ -83,94 +79,115 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         body {
             margin: 0;
             font-family: 'Prompt', sans-serif;
-            background: linear-gradient(135deg, var(--c1), var(--c2));
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
             color: var(--ink);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--c1), var(--c2));
+            padding: 24px;
         }
 
-        .box {
-            background: var(--card);
-            padding: 34px 34px 28px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, .20);
-            width: 420px;
+        .wrap {
+            width: min(520px, 100%);
+            background: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(255, 255, 255, .95));
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, .18);
+            overflow: hidden;
+            backdrop-filter: blur(4px);
         }
 
-        h2 {
-            color: var(--c2);
-            margin: 0 0 18px;
+        .hero {
+            padding: 20px 24px;
+            background: linear-gradient(90deg, #4cb5da, #5b86e5);
+            color: #fff;
+        }
+
+        .hero h2 {
+            margin: 0;
+            font-size: 22px;
             font-weight: 700;
-            text-align: center
+            display: flex;
+            align-items: center;
+            gap: 10px
         }
 
-        .subtitle {
-            color: var(--muted);
-            font-size: 14px;
-            text-align: center;
-            margin: -6px 0 16px
+        .hero p {
+            margin: 6px 0 0;
+            opacity: .95;
+            font-size: 14px
+        }
+
+        .card {
+            padding: 26px;
+            background: var(--card);
         }
 
         label {
             display: block;
             font-size: 14px;
+            color: var(--muted);
             margin: 10px 0 6px
+        }
+
+        .group {
+            position: relative;
+        }
+
+        .group i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 18px;
         }
 
         input,
         button {
             width: 100%;
-            padding: 12px;
-            border-radius: 10px;
-            border: 1px solid #cbd5e1;
+            padding: 12px 12px 12px 38px;
             font-size: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: #fff;
+            transition: border-color .2s, box-shadow .2s;
         }
 
-        input:focus {
-            border-color: var(--c2);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(91, 134, 229, .12);
+        /* ช่องกรอกมี padding-left สำหรับไอคอนด้านซ้าย แต่ด้านขวาไม่ต้องเผื่อเยอะ */
+        input {
+            width: 100%;
+            padding: 12px 40px 12px 38px;
+            /* บน-ขวา-ล่าง-ซ้าย (เพิ่ม 40px เผื่อไอคอนตา) */
+            font-size: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: #fff;
+            transition: border-color .2s, box-shadow .2s;
         }
 
-        button {
-            background: linear-gradient(to right, var(--c1), var(--c2));
-            color: white;
+        /* ปุ่มไอคอนตาอยู่ขวาสุด */
+        .pw-toggle {
+            position: absolute;
+            right: 12px;
+            /* ชิดขอบขวา */
+            top: 50%;
+            transform: translateY(-50%);
             border: none;
+            background: transparent;
             cursor: pointer;
-            font-weight: 700;
-            margin-top: 12px;
+            color: #64748b;
+            font-size: 18px;
+            padding: 0;
+            /* เอา margin/padding ออกให้ชิดจริง ๆ */
         }
 
-        button:hover {
-            opacity: .95;
-        }
 
-        .error {
-            color: #e11d48;
-            margin-top: 10px;
-            text-align: center;
-        }
-
-        .link {
-            margin-top: 14px;
-            font-size: 14px;
-            text-align: center;
-            color: var(--muted);
-        }
-
-        .link a {
-            color: var(--c2);
-            font-weight: 700;
-            text-decoration: none;
-        }
-
-        /* Role selector */
+        /* roles */
         .roles {
             display: flex;
             gap: 10px;
-            margin: 10px 0 4px;
+            margin: 10px 0 4px
         }
 
         .role {
@@ -190,119 +207,195 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .role:hover {
-            border-color: var(--c2);
-            box-shadow: 0 0 0 3px rgba(91, 134, 229, .12);
+            border-color: #5b86e5;
+            box-shadow: 0 0 0 3px rgba(91, 134, 229, .12)
         }
 
         .role input {
             position: absolute;
             inset: 0;
             opacity: 0;
-            cursor: pointer;
+            cursor: pointer
         }
 
         .role.active {
-            border-color: var(--c2);
+            border-color: #5b86e5;
             box-shadow: 0 0 0 3px rgba(91, 134, 229, .18);
-            background: #fff;
+            background: #fff
+        }
+
+        .btn {
+            margin-top: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            background: linear-gradient(90deg, var(--c1), var(--c2));
+            color: #fff;
+            box-shadow: 0 6px 16px rgba(91, 134, 229, .25);
+        }
+
+        .btn:hover {
+            filter: brightness(1.05)
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 14px;
+            text-align: center;
+            margin: 8px 0
+        }
+
+        .msg {
+            text-align: center;
+            font-size: 14px;
+            margin: 8px 0
+        }
+
+        .msg.err {
+            color: var(--err)
+        }
+
+        .msg.ok {
+            color: var(--ok)
+        }
+
+        .link {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 14px;
+            color: var(--muted)
+        }
+
+        .link a {
+            color: #5b86e5;
+            font-weight: 700;
+            text-decoration: none
         }
     </style>
 </head>
 
 <body>
-    <div class="box">
-        <h2>🔑 เข้าสู่ระบบ</h2>
-        <p class="subtitle">เลือกบทบาทให้ตรงกับสิทธิ์ในระบบ</p>
+    <div class="wrap">
+        <div class="hero">
+            <h2><i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ</h2>
+            <p>เลือกบทบาทให้ตรงกับสิทธิ์ของบัญชีคุณ</p>
+        </div>
 
-        <form method="POST" autocomplete="off">
-            <label>อีเมล</label>
-            <input type="email" name="email" placeholder="📧 your@email.com" required>
+        <div class="card">
+            <?php if (!empty($_SESSION['flash'])): ?>
+                <p class="msg ok"><?= htmlspecialchars($_SESSION['flash']);
+                                    unset($_SESSION['flash']); ?></p>
+            <?php endif; ?>
+            <?php if (isset($error)): ?>
+                <p class="msg err"><?= htmlspecialchars($error) ?></p>
+            <?php endif; ?>
 
-            <label>รหัสผ่าน</label>
-            <input type="password" name="password" placeholder="🔒 ••••••••" required>
+            <form method="POST" autocomplete="off">
+                <label>อีเมล</label>
+                <div class="group">
+                    <i class="bi bi-envelope-fill"></i>
+                    <input type="email" name="email" placeholder="your@email.com"
+                        value="<?= htmlspecialchars($emailVal) ?>" required>
+                </div>
 
-            <label>บทบาท</label>
-            <div class="roles" id="roles">
-                <label class="role active">
-                    <input type="radio" name="role" value="student" checked>
-                    👨‍🎓 Student
-                </label>
-                <label class="role">
-                    <input type="radio" name="role" value="teacher">
-                    👩‍🏫 Teacher
-                </label>
-                <label class="role">
-                    <input type="radio" name="role" value="admin">
-                    🛡️ Admin
-                </label>
-            </div>
-
-            <button type="submit">เข้าสู่ระบบ</button>
-        </form>
-
-        <?php if (isset($error)): ?>
-            <p class="error"><?= htmlspecialchars($error) ?></p>
-        <?php endif; ?>
-
-        <p class="link" id="regWrap">
-            ยังไม่มีบัญชี?
-            <a id="regLink" href="register_student.php">สมัครสมาชิก (เฉพาะนักเรียน)</a>
-        </p>
+                <label>รหัสผ่าน</label>
+                <div>
+                    <div class="group">
+                        <i class="bi bi-shield-lock-fill"></i>
+                        <input type="password" name="password" placeholder=" ••••••••" required>
+                        
+                    </div>
+                </div>
 
 
+                <label>บทบาท</label>
+                <div class="roles" id="roles">
+                    <label class="role <?= $initialRole === 'student' ? 'active' : '' ?>">
+                        <input type="radio" name="role" value="student" <?= $initialRole === 'student' ? 'checked' : '' ?>>
+                        👨‍🎓 Student
+                    </label>
+                    <label class="role <?= $initialRole === 'teacher' ? 'active' : '' ?>">
+                        <input type="radio" name="role" value="teacher" <?= $initialRole === 'teacher' ? 'checked' : '' ?>>
+                        👩‍🏫 Teacher
+                    </label>
+                    <label class="role <?= $initialRole === 'admin' ? 'active' : '' ?>">
+                        <input type="radio" name="role" value="admin" <?= $initialRole === 'admin' ? 'checked' : '' ?>>
+                        🛡️ Admin
+                    </label>
+                </div>
+
+                <button class="btn" type="submit"><i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ</button>
+            </form>
+
+            <p class="link" id="regWrap">
+                ยังไม่มีบัญชี?
+                <a id="regLink" href="register_student.php">ลงทะเบียน (เฉพาะนักเรียน)</a>
+            </p>
+        </div>
     </div>
 
     <script>
-        // ปุ่มบทบาท (label สวย ๆ)
-        const roleBoxes = document.querySelectorAll('.role');
-        roleBoxes.forEach(lb => {
-            lb.addEventListener('click', () => {
-                roleBoxes.forEach(x => x.classList.remove('active'));
-                lb.classList.add('active');
-                const input = lb.querySelector('input[type="radio"]');
-                if (input) input.checked = true;
-                // หมายเหตุ: เรามี listener 'change' ด้านล่างอยู่แล้ว
-                // แต่บางธีม label อาจไม่ยิง change ทันที จึงเรียก update ซ้ำให้ชัวร์
-                if (input) updateRegLink(input.value);
-            });
-        });
-
-        // อัปเดตลิงก์สมัครสมาชิกตามบทบาท (ใช้กับ radio โดยตรง)
-        const regLink = document.getElementById('regLink');
-        const roleToLink = {
+        // เปลี่ยนลิงก์สมัครตามบทบาท
+        const ROLE_LINK = {
             student: {
                 href: 'register_student.php',
-                text: 'สมัครสมาชิก (เฉพาะนักเรียน)'
+                text: 'ลงทะเบียน (เฉพาะนักเรียน)'
             },
             teacher: {
                 href: 'register_teacher.php',
-                text: 'สมัครบัญชี (เฉพาะครู)'
+                text: 'ลงทะเบียน (เฉพาะครู)'
             },
             admin: {
                 href: 'register_admin.php',
-                text: 'สมัครบัญชี (เฉพาะแอดมิน)'
+                text: 'ลงทะเบียน (เฉพาะแอดมิน)'
             }
         };
+        const regLink = document.getElementById('regLink');
+        const roleRadios = document.querySelectorAll('input[name="role"]');
+        const roleBoxes = document.querySelectorAll('.role');
 
-        function updateRegLink(role) {
-            const m = roleToLink[role] || roleToLink.student;
-            if (regLink) {
-                regLink.href = m.href;
-                regLink.textContent = m.text;
-            }
+        function getSelectedRole() {
+            const r = document.querySelector('input[name="role"]:checked');
+            return r ? r.value : 'student';
         }
 
-        // ฟังการเปลี่ยนค่าจาก radio โดยตรง (แม่นสุด)
-        const roleRadios = document.querySelectorAll('input[name="role"]');
-        roleRadios.forEach(r => {
-            r.addEventListener('change', () => updateRegLink(r.value));
-        });
+        function updateRegisterLink(role) {
+            const cfg = ROLE_LINK[role] || ROLE_LINK.student;
+            regLink.href = cfg.href;
+            regLink.textContent = cfg.text;
+        }
 
-        // ตั้งค่าตอนโหลดหน้า
-        document.addEventListener('DOMContentLoaded', () => {
-            const checked = document.querySelector('input[name="role"]:checked');
-            updateRegLink(checked ? checked.value : 'student');
-        });
+        function syncActive(role) {
+            roleBoxes.forEach(lb => {
+                const input = lb.querySelector('input[type="radio"]');
+                lb.classList.toggle('active', !!input && input.value === role);
+            });
+        }
+
+        function syncUI() {
+            const role = getSelectedRole();
+            updateRegisterLink(role);
+            syncActive(role);
+        }
+
+        roleRadios.forEach(r => r.addEventListener('change', syncUI));
+        roleBoxes.forEach(lb => lb.addEventListener('click', () => {
+            const input = lb.querySelector('input[type="radio"]');
+            if (input) {
+                input.checked = true;
+                syncUI();
+            }
+        }));
+
+        // ตั้งต้นตามค่าที่ PHP เรนเดอร์มา
+        document.addEventListener('DOMContentLoaded', syncUI);
     </script>
 </body>
+
 </html>
