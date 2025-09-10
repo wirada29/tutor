@@ -29,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($roleSel !== $roleDb) {
                     $error = "⚠️ บทบาทที่เลือกไม่ตรงกับสิทธิ์ในระบบ (คุณคือ '{$roleDb}')";
                 } else {
+                    // Login สำเร็จ: เก็บ session
                     $_SESSION['user'] = [
                         'user_id' => $user['user_id'] ?? ($user['id'] ?? null),
                         'name'    => $user['name']    ?? '',
@@ -41,7 +42,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['total_score']    = 430;
                     $_SESSION['total_max']      = 500;
 
-                    header("Location: dashboard.php");
+                    // ➜ เด้งไปตามบทบาท
+                    $target = match ($roleDb) {
+                        'teacher' => 'teacher_dashboard.php',
+                        'admin'   => 'admin_dashboard.php', // ถ้ายังไม่มีไฟล์นี้จะ fallback ด้านล่าง
+                        default   => 'dashboard.php',       // student
+                    };
+
+                    // ถ้าไฟล์ปลายทางไม่มี ให้กลับไป dashboard ปกติ (กันพัง)
+                    if (!is_file(__DIR__ . "/{$target}")) {
+                        $target = 'dashboard.php';
+                    }
+
+                    header("Location: {$target}");
                     exit();
                 }
             }
@@ -309,7 +322,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="group">
                         <i class="bi bi-shield-lock-fill"></i>
                         <input type="password" name="password" placeholder=" ••••••••" required>
-                        
+
                     </div>
                 </div>
 
