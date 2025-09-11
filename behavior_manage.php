@@ -83,10 +83,17 @@ input,select,textarea{width:100%;padding:10px;border:1px solid #e5e7eb;border-ra
 <body>
   <div class="sidebar">
     <h2>🙂 พฤติกรรม</h2>
-    <a href="teacher_dashboard.php"><i class="bi bi-speedometer2"></i> แดชบอร์ดครู</a>
-    <a href="content_manage.php"><i class="bi bi-folder2-open"></i> เนื้อหา</a>
+    <a href="teacher_dashboard.php"><i class="bi bi-house"></i> หน้าหลัก</a>
+    <a href="content_manage.php"><i class="bi bi-folder2-open"></i> เนื้อหา/เอกสาร</a>
+    <?php if (is_teacher() || is_admin()): ?>
+      <a href="teacher_assign_list.php"><i class="bi bi-card-checklist"></i> งานที่มอบหมาย</a>
+      <a href="teacher_assign_create.php"><i class="bi bi-clipboard-plus"></i> สร้างงานใหม่</a>
+    <?php endif; ?>
+
     <a href="attendance_manage.php"><i class="bi bi-clipboard-check"></i> เช็คชื่อ</a>
     <a href="behavior_manage.php"><i class="bi bi-emoji-smile"></i> ความประพฤติ</a>
+    <a href="logout.php"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</a>
+  </div>
   </div>
 
   <div class="main">

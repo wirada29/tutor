@@ -215,14 +215,10 @@ $current = basename($_SERVER['PHP_SELF']); // active menu
     }
 
     .sidebar h2 {
-      font-size: 22px;
-      font-weight: 600;
       margin: 0 0 24px;
       text-align: center;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #fff
+      font-size: 22px;
+      font-weight: 600
     }
 
     .sidebar a {
@@ -313,15 +309,13 @@ $current = basename($_SERVER['PHP_SELF']); // active menu
 
   <!-- Sidebar -->
   <div class="sidebar">
-    <h2>📘 สถาบันติวเตอร์</h2>
-    <a href="dashboard.php" class="<?= $current === 'dashboard.php' ? 'active' : '' ?>"><i class="bi bi-house-fill"></i> หน้าแรก</a>
-    <a href="student.php" class="<?= $current === 'student.php' ? 'active' : '' ?>"><i class="bi bi-person-circle"></i> นักเรียน</a>
-    <a href="courses.php" class="<?= $current === 'courses.php' ? 'active' : '' ?>"><i class="bi bi-journal-bookmark-fill"></i> รายวิชา</a>
-    <a href="grades.php" class="<?= $current === 'grades.php' ? 'active' : '' ?>"><i class="bi bi-bar-chart-line-fill"></i> ผลการเรียน</a>
-    <a href="notifications.php" class="<?= $current === 'notifications.php' ? 'active' : '' ?>"><i class="bi bi-bell-fill"></i> แจ้งเตือน</a>
-    <?php if ($role === 'admin'): ?>
-      <a href="users.php" class="<?= $current === 'users.php' ? 'active' : '' ?>"><i class="bi bi-people-fill"></i> ผู้ใช้ทั้งหมด</a>
-    <?php endif; ?>
+    <h2>📘 ผลการเรียน</h2>
+    <a href="dashboard.php"><i class="bi bi-house-fill"></i> หน้าแรก</a>
+    <a href="student.php"><i class="bi bi-person-circle"></i> นักเรียน</a>
+    <a href="courses.php"><i class="bi bi-journal-bookmark-fill"></i> รายวิชา</a>
+    <a href="my_enrollments.php"><i class="bi bi-journal-bookmark-fill"></i> ลงทะเบียนเรียน</a>
+    <a href="grades.php"><i class="bi bi-bar-chart-line-fill"></i> ผลการเรียน</a>
+    <a href="notifications.php"><i class="bi bi-bell-fill"></i> แจ้งเตือน</a>
     <a href="logout.php"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</a>
   </div>
 

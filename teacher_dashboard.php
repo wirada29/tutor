@@ -209,7 +209,7 @@ $courses = $coursesStmt->fetchAll(PDO::FETCH_ASSOC);
 <body>
   <div class="sidebar">
     <h2>👩‍🏫 ครู</h2>
-    <a href="teacher_dashboard.php"><i class="bi bi-speedometer2"></i> แดชบอร์ด</a>
+    <a href="teacher_dashboard.php"><i class="bi bi-house"></i> หน้าหลัก</a>
     <a href="content_manage.php"><i class="bi bi-folder2-open"></i> เนื้อหา/เอกสาร</a>
     <?php if (is_teacher() || is_admin()): ?>
       <a href="teacher_assign_list.php"><i class="bi bi-card-checklist"></i> งานที่มอบหมาย</a>
@@ -218,13 +218,12 @@ $courses = $coursesStmt->fetchAll(PDO::FETCH_ASSOC);
 
     <a href="attendance_manage.php"><i class="bi bi-clipboard-check"></i> เช็คชื่อ</a>
     <a href="behavior_manage.php"><i class="bi bi-emoji-smile"></i> ความประพฤติ</a>
-    <a href="courses.php"><i class="bi bi-journal-bookmark-fill"></i> รายวิชา (มุมมองนักเรียน)</a>
     <a href="logout.php"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</a>
   </div>
 
   <div class="main">
     <div class="card">
-      <h2 style="margin:0 0 10px">แดชบอร์ดครู</h2>
+      <h2 style="margin:0 0 10px">หน้าหลัก</h2>
       <div class="kpis">
         <div class="kpi">
           <div class="h">วิชาที่สอน</div>

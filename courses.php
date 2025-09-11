@@ -302,10 +302,13 @@ $enrolled = enrolled_map($pdo, $uid);
     <div class="sidebar">
         <h2>📘 รายวิชา</h2>
         <a href="dashboard.php"><i class="bi bi-house-fill"></i> หน้าแรก</a>
-        <a href="student.php"><i class="bi bi-person-circle"></i> โปรไฟล์</a>
+        <a href="student.php"><i class="bi bi-person-circle"></i> นักเรียน</a>
         <a href="courses.php"><i class="bi bi-journal-bookmark-fill"></i> รายวิชา</a>
+        <a href="my_enrollments.php"><i class="bi bi-journal-bookmark-fill"></i> ลงทะเบียนเรียน</a>
         <a href="grades.php"><i class="bi bi-bar-chart-line-fill"></i> ผลการเรียน</a>
-        <a href="logout.php"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</a>
+        <a href="notifications.php"><i class="bi bi-bell-fill"></i> แจ้งเตือน</a>
+
+              <a href="logout.php"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</a>
     </div>
 
     <div class="main">

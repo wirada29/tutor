@@ -13,6 +13,10 @@ $sql = "SELECT e.*, c.title, c.status AS course_status
 $st = $pdo->prepare($sql);
 $st->execute([$uid]);
 $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+
+// ใช้สำหรับไฮไลท์เมนู
+$current = basename($_SERVER['PHP_SELF']);
+$role    = strtolower($_SESSION['user']['role'] ?? 'student');
 ?>
 <!doctype html>
 <html lang="th">
@@ -22,6 +26,7 @@ $rows = $st->fetchAll(PDO::FETCH_ASSOC);
     <title>การลงทะเบียนของฉัน | สถาบันติวเตอร์</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --blue: #3b82f6;
@@ -42,22 +47,69 @@ $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
         body {
             margin: 0;
-            font-family: Prompt, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            font-family: 'Sarabun', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
             background: var(--bg);
             color: var(--ink);
+            display: flex;
+            min-height: 100vh
         }
 
-        .wrap {
-            max-width: 960px;
-            margin: 40px auto;
-            padding: 0 16px
+        /* Sidebar (ให้เหมือนหน้าอื่น ๆ) */
+        .sidebar {
+            width: 230px;
+            background: linear-gradient(180deg, var(--blue), #2b6de1);
+            color: #fff;
+            height: 100vh;
+            padding: 26px 16px;
+            position: fixed;
+            inset: 0 auto 0 0;
+            overflow-y: auto;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, .08)
+        }
+
+        .sidebar h2 {
+            font-size: 22px;
+            font-weight: 600;
+            margin: 0 0 24px;
+            text-align: center
+        }
+
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            text-decoration: none;
+            margin-bottom: 12px;
+            padding: 11px 10px;
+            border-radius: 10px;
+            transition: transform .15s, background .2s, opacity .2s;
+            opacity: .95
+        }
+
+        .sidebar a:hover {
+            background: rgba(255, 255, 255, .15);
+            transform: translateY(-1px);
+            opacity: 1
+        }
+
+        .sidebar a.active {
+            background: rgba(255, 255, 255, .22);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18)
+        }
+
+        /* Main */
+        .main {
+            flex: 1;
+            margin-left: 230px;
+            padding: 28px
         }
 
         .header {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin: 0 0 14px;
+            margin: 0 0 14px
         }
 
         .header h2 {
@@ -65,7 +117,7 @@ $rows = $st->fetchAll(PDO::FETCH_ASSOC);
             font-size: 26px
         }
 
-        .header .chip {
+        .chip {
             background: #eef2ff;
             color: #1e3a8a;
             border-radius: 999px;
@@ -79,14 +131,14 @@ $rows = $st->fetchAll(PDO::FETCH_ASSOC);
             border-radius: 16px;
             padding: 18px;
             margin-bottom: 14px;
-            box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, .06)
         }
 
         .row {
             display: grid;
             grid-template-columns: 1fr auto;
             gap: 12px;
-            align-items: start;
+            align-items: start
         }
 
         .title {
@@ -95,7 +147,7 @@ $rows = $st->fetchAll(PDO::FETCH_ASSOC);
             gap: 10px;
             margin: 4px 0 6px;
             font-size: 18px;
-            font-weight: 700;
+            font-weight: 700
         }
 
         .meta {
@@ -117,7 +169,7 @@ $rows = $st->fetchAll(PDO::FETCH_ASSOC);
             padding: 6px 10px;
             border-radius: 999px;
             font-weight: 700;
-            font-size: 13px;
+            font-size: 13px
         }
 
         .b-ok {
@@ -155,7 +207,7 @@ $rows = $st->fetchAll(PDO::FETCH_ASSOC);
             border-radius: 12px;
             border: none;
             cursor: pointer;
-            font-weight: 700;
+            font-weight: 700
         }
 
         .btn-muted {
@@ -190,9 +242,23 @@ $rows = $st->fetchAll(PDO::FETCH_ASSOC);
             font-weight: 700
         }
 
+        @media (max-width:992px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+                inset: auto
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 20px
+            }
+        }
+
         @media (max-width:720px) {
             .row {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr
             }
 
             .actions {
@@ -210,7 +276,22 @@ $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 </head>
 
 <body>
-    <div class="wrap">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>📘 ลงทะเบียนเรียน</h2>
+        <a href="dashboard.php"><i class="bi bi-house-fill"></i> หน้าแรก</a>
+        <a href="student.php"><i class="bi bi-person-circle"></i> นักเรียน</a>
+        <a href="courses.php"><i class="bi bi-journal-bookmark-fill"></i> รายวิชา</a>
+        <a href="my_enrollments.php"><i class="bi bi-journal-bookmark-fill"></i> ลงทะเบียนเรียน</a>
+        <a href="grades.php"><i class="bi bi-bar-chart-line-fill"></i> ผลการเรียน</a>
+        <a href="notifications.php"><i class="bi bi-bell-fill"></i> แจ้งเตือน</a>
+        <a href="logout.php"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</a>
+    </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
         <div class="header">
             <h2>🧾 การลงทะเบียนของฉัน</h2>
             <span class="chip"><i class="bi bi-journal-bookmark-fill"></i> <?= number_format(count($rows)) ?> รายการ</span>
@@ -267,6 +348,7 @@ $rows = $st->fetchAll(PDO::FETCH_ASSOC);
             </div>
         <?php endif; ?>
     </div>
+
 </body>
 
 </html>
