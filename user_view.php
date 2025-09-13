@@ -9,7 +9,25 @@ require_once __DIR__ . '/config/db.php';
 $id = (int)($_GET['id'] ?? 0);
 if ($id <= 0) { header("Location: admin_users.php"); exit; }
 
-$st = $pdo->prepare("SELECT user_id, name, email, role, created_at, updated_at FROM users WHERE user_id=?");
+// เช็คว่ามีคอลัมน์ created_at / updated_at ไหม
+$stCols = $pdo->prepare("
+  SELECT COLUMN_NAME
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'users'
+    AND COLUMN_NAME IN ('created_at','updated_at')
+");
+$stCols->execute();
+$cols = $stCols->fetchAll(PDO::FETCH_COLUMN);
+$hasCreated = in_array('created_at', $cols, true);
+$hasUpdated = in_array('updated_at', $cols, true);
+
+// ประกอบ SELECT ตามคอลัมน์ที่มีจริง
+$select = "user_id, name, email, role";
+if ($hasCreated) $select .= ", created_at";
+if ($hasUpdated) $select .= ", updated_at";
+
+$st = $pdo->prepare("SELECT $select FROM users WHERE user_id=?");
 $st->execute([$id]);
 $u = $st->fetch(PDO::FETCH_ASSOC);
 if (!$u) { $_SESSION['flash'] = "ไม่พบบัญชีผู้ใช้"; header("Location: admin_users.php"); exit; }
@@ -48,6 +66,10 @@ body{margin:0;font-family:'Sarabun',system-ui,-apple-system,Segoe UI,Roboto,Aria
 .btn-muted{background:#e5e7eb}
 .btn-danger{background:var(--err);color:#fff}
 .meta{color:var(--muted);font-size:13px}
+@media (max-width: 768px){
+  .main{margin-left:0;padding:20px}
+  .sidebar{position:relative;width:100%;height:auto;inset:auto}
+}
 </style>
 </head>
 <body>
@@ -63,7 +85,13 @@ body{margin:0;font-family:'Sarabun',system-ui,-apple-system,Segoe UI,Roboto,Aria
   <div class="main">
     <div class="card">
       <h2 style="margin:0 0 8px"><i class="bi bi-person-badge"></i> ผู้ใช้ #<?= (int)$u['user_id'] ?></h2>
-      <div class="meta">สร้าง: <?= h($u['created_at'] ?: '—') ?> • อัปเดต: <?= h($u['updated_at'] ?: '—') ?></div>
+      <?php if ($hasCreated || $hasUpdated): ?>
+        <div class="meta">
+          <?php if ($hasCreated): ?>สร้าง: <?= h($u['created_at'] ?? '—') ?><?php endif; ?>
+          <?php if ($hasCreated && $hasUpdated): ?> • <?php endif; ?>
+          <?php if ($hasUpdated): ?>อัปเดต: <?= h($u['updated_at'] ?? '—') ?><?php endif; ?>
+        </div>
+      <?php endif; ?>
     </div>
 
     <div class="card">
