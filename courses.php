@@ -1,49 +1,44 @@
 <?php
-// courses.php — รายวิชา + ลงทะเบียน/ถอน ในหน้าเดียว
+// courses.php — รายวิชา + ลงทะเบียน/ถอน (JOIN subjects)
 session_start();
 
-require_once __DIR__ . '/config/db.php';      // ต้องมี $pdo = new PDO(...)
+require_once __DIR__ . '/config/db.php';      // ต้องมี $pdo
 require_once __DIR__ . '/includes/auth.php';  // ต้องมี require_login(), current_user_id()
 
 require_login();
-$uid = current_user_id();                     // id ผู้ใช้ปัจจุบัน (student)
+$uid = current_user_id();
 
 // ---------- ค่าค้นหา ----------
 $q = trim($_GET['q'] ?? '');
 
-// ---------- Helper นับที่นั่งคงเหลือ ----------
+// ---------- Helpers ----------
 function count_used_seats(PDO $pdo, int $courseId): int
 {
-    // พยายามนับเฉพาะสถานะ active (ถ้ามีคอลัมน์ status)
+    // พยายามนับเฉพาะ status='active' ถ้ามีคอลัมน์นี้
     try {
-        $st = $pdo->prepare("SELECT COUNT(*) FROM enrollments WHERE course_id = ? AND status = 'active'");
+        $st = $pdo->prepare("SELECT COUNT(*) FROM enrollments WHERE course_id=? AND status='active'");
         $st->execute([$courseId]);
         return (int)$st->fetchColumn();
     } catch (Throwable $e) {
-        // fallback: ไม่มีคอลัมน์ status ก็ใช้ count(*) ทั้งหมด
-        $st = $pdo->prepare("SELECT COUNT(*) FROM enrollments WHERE course_id = ?");
+        $st = $pdo->prepare("SELECT COUNT(*) FROM enrollments WHERE course_id=?");
         $st->execute([$courseId]);
         return (int)$st->fetchColumn();
     }
 }
 
-// แมพวิชาที่ผู้ใช้ลงทะเบียนอยู่แล้ว
 function enrolled_map(PDO $pdo, int $userId): array
 {
     $map = [];
     try {
-        // ถ้าตารางคุณใช้ student_id ให้เปลี่ยน user_id -> student_id
-        $st = $pdo->prepare("SELECT course_id FROM enrollments WHERE user_id = ? AND (status IS NULL OR status = 'active')");
+        $st = $pdo->prepare("SELECT course_id FROM enrollments WHERE user_id=? AND (status IS NULL OR status='active')");
         $st->execute([$userId]);
-        foreach ($st as $r) {
-            $map[(int)$r['course_id']] = true;
-        }
+        foreach ($st as $r) $map[(int)$r['course_id']] = true;
     } catch (Throwable $e) {
     }
     return $map;
 }
 
-// ---------- จัดการ action ลงทะเบียน/ถอน ----------
+// ---------- Actions ----------
 $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action   = $_POST['action']    ?? '';
@@ -52,8 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($courseId > 0) {
         if ($action === 'enroll') {
             try {
-                // ตรวจสอบคอร์สก่อน
-                $st = $pdo->prepare("SELECT max_seats, status FROM courses WHERE course_id = ?");
+                $st = $pdo->prepare("SELECT max_seats, status FROM courses WHERE course_id=?");
                 $st->execute([$courseId]);
                 $course = $st->fetch(PDO::FETCH_ASSOC);
 
@@ -64,11 +58,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $max  = (int)($course['max_seats'] ?? 0);
                     $used = count_used_seats($pdo, $courseId);
-
                     if ($max > 0 && $used >= $max) {
                         $msg = "เต็มแล้ว ไม่สามารถลงทะเบียนได้";
                     } else {
-                        // ถ้าตารางคุณใช้ student_id ให้เปลี่ยน user_id -> student_id
                         $st = $pdo->prepare("INSERT INTO enrollments(user_id, course_id, status, enrolled_at) VALUES(?, ?, 'active', NOW())");
                         $st->execute([$uid, $courseId]);
                         $msg = "ลงทะเบียนสำเร็จ";
@@ -79,9 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } elseif ($action === 'drop') {
             try {
-                // ถ้าตารางคุณใช้ student_id ให้เปลี่ยน user_id -> student_id
-                // ถ้ามีคอลัมน์ status อาจเปลี่ยนเป็น UPDATE status='cancelled' ได้
-                $st = $pdo->prepare("DELETE FROM enrollments WHERE user_id = ? AND course_id = ?");
+                $st = $pdo->prepare("DELETE FROM enrollments WHERE user_id=? AND course_id=?");
                 $st->execute([$uid, $courseId]);
                 $msg = "ถอนรายวิชาเรียบร้อย";
             } catch (Throwable $e) {
@@ -91,16 +81,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ---------- โหลดรายวิชา ----------
-$sql  = "SELECT c.course_id, c.title, c.description, c.max_seats, c.status,
-                u.name AS teacher_name
-         FROM courses c
-         LEFT JOIN users u ON u.user_id = c.teacher_id
-         WHERE c.status = 'open' ";
+$sql = "SELECT
+          c.course_id, c.title, c.description, c.max_seats, c.status,
+          u.name AS teacher_name,
+          s.code AS subject_code, s.name AS subject_name
+        FROM courses c
+        LEFT JOIN users    u ON u.user_id = c.teacher_id
+        LEFT JOIN subjects s ON s.id      = c.subject_id
+        WHERE 1=1";  // << ใช้ตรงนี้
+
 $args = [];
 if ($q !== '') {
-    $sql  .= " AND c.title LIKE ? ";
-    $args[] = "%$q%";
+    $sql .= " AND (c.title LIKE ? OR s.code LIKE ? OR s.name LIKE ?)";
+    $kw = "%$q%";
+    $args = [$kw, $kw, $kw];
 }
 $sql .= " ORDER BY c.course_id DESC";
 
@@ -108,7 +102,9 @@ $st = $pdo->prepare($sql);
 $st->execute($args);
 $courses = $st->fetchAll(PDO::FETCH_ASSOC);
 
-// แมพวิชาที่นักเรียนลงทะเบียนอยู่
+
+
+// วิชาที่นักเรียนลงทะเบียนอยู่
 $enrolled = enrolled_map($pdo, $uid);
 ?>
 <!doctype html>
@@ -307,15 +303,14 @@ $enrolled = enrolled_map($pdo, $uid);
         <a href="my_enrollments.php"><i class="bi bi-journal-bookmark-fill"></i> ลงทะเบียนเรียน</a>
         <a href="grades.php"><i class="bi bi-bar-chart-line-fill"></i> ผลการเรียน</a>
         <a href="notifications.php"><i class="bi bi-bell-fill"></i> แจ้งเตือน</a>
-
-              <a href="logout.php"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</a>
+        <a href="logout.php"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</a>
     </div>
 
     <div class="main">
         <div class="card">
             <h2 style="margin:0">📚 รายวิชาที่เปิดให้ลงทะเบียน</h2>
             <form class="row" method="get" action="courses.php" style="margin-top:10px">
-                <input class="input" type="text" name="q" placeholder="ค้นหาชื่อวิชา (title)..." value="<?= htmlspecialchars($q) ?>">
+                <input class="input" type="text" name="q" placeholder="ค้นหา: ชื่อคอร์ส / รหัสวิชา / ชื่อวิชา (subjects)" value="<?= htmlspecialchars($q) ?>">
                 <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> ค้นหา</button>
                 <?php if ($q !== ''): ?><a class="btn btn-muted" href="courses.php">ล้างคำค้น</a><?php endif; ?>
             </form>
@@ -331,6 +326,7 @@ $enrolled = enrolled_map($pdo, $uid);
                 <table>
                     <thead>
                         <tr>
+                            <th style="width:160px;">วิชา (Subject)</th>
                             <th style="width:240px;">ชื่อวิชา</th>
                             <th>รายละเอียด</th>
                             <th style="width:140px;">อาจารย์</th>
@@ -346,12 +342,17 @@ $enrolled = enrolled_map($pdo, $uid);
                             $desc     = $c['description'] ?? '';
                             $max      = (int)($c['max_seats'] ?? 0);
                             $status   = strtolower($c['status'] ?? 'open');
-                            $teacher  = $c['teacher_name'] ?? ('ครู #' . ($c['teacher_id'] ?? ''));
+                            $teacher  = $c['teacher_name'] ?? '—';
+                            $scode    = $c['subject_code'] ?? '';
+                            $sname    = $c['subject_name'] ?? '';
+                            $subject  = trim($scode . ($scode && $sname ? ' - ' : '') . $sname);
+                            if ($subject === '') $subject = '—';
                             $used     = count_used_seats($pdo, $cid);
                             $left     = ($max > 0) ? max(0, $max - $used) : '—';
                             $enr      = !empty($enrolled[$cid]);
                         ?>
                             <tr>
+                                <td><strong><?= htmlspecialchars($subject) ?></strong></td>
                                 <td><strong><?= htmlspecialchars($title) ?></strong></td>
                                 <td style="color:#475569;font-size:14px"><?= nl2br(htmlspecialchars($desc)) ?></td>
                                 <td><?= htmlspecialchars($teacher) ?></td>
@@ -398,5 +399,4 @@ $enrolled = enrolled_map($pdo, $uid);
         </div>
     </div>
 </body>
-
 </html>
