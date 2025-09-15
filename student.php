@@ -181,10 +181,7 @@ $current = basename($_SERVER['PHP_SELF']); // ใช้ไฮไลท์เม�
     <div class="main">
         <div class="card">
             <h2>👋 สวัสดีคุณ <?= htmlspecialchars($name) ?></h2>
-            <p>รหัสนักศึกษา: <span class="pill"><?= htmlspecialchars($student_no) ?></span></p>
             <p>อีเมล: <span class="pill"><?= htmlspecialchars($email) ?></span></p>
-            <p>ชั้น/ห้อง: <span class="pill"><?= htmlspecialchars($class) ?></span></p>
-            <p>สาขา: <span class="pill"><?= htmlspecialchars($major) ?></span></p>
             <p>บทบาท: <span class="pill"><?= htmlspecialchars(ucfirst($role)) ?></span></p>
         </div>
 
