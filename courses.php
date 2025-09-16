@@ -14,7 +14,6 @@ $q = trim($_GET['q'] ?? '');
 // ---------- Helpers ----------
 function count_used_seats(PDO $pdo, int $courseId): int
 {
-    // พยายามนับเฉพาะ status='active' ถ้ามีคอลัมน์นี้
     try {
         $st = $pdo->prepare("SELECT COUNT(*) FROM enrollments WHERE course_id=? AND status='active'");
         $st->execute([$courseId]);
@@ -88,7 +87,7 @@ $sql = "SELECT
         FROM courses c
         LEFT JOIN users    u ON u.user_id = c.teacher_id
         LEFT JOIN subjects s ON s.id      = c.subject_id
-        WHERE 1=1";  // << ใช้ตรงนี้
+        WHERE 1=1";
 
 $args = [];
 if ($q !== '') {
@@ -101,8 +100,6 @@ $sql .= " ORDER BY c.course_id DESC";
 $st = $pdo->prepare($sql);
 $st->execute($args);
 $courses = $st->fetchAll(PDO::FETCH_ASSOC);
-
-
 
 // วิชาที่นักเรียนลงทะเบียนอยู่
 $enrolled = enrolled_map($pdo, $uid);
@@ -301,7 +298,6 @@ $enrolled = enrolled_map($pdo, $uid);
         <a href="student.php"><i class="bi bi-person-circle"></i> นักเรียน</a>
         <a href="courses.php"><i class="bi bi-journal-bookmark-fill"></i> รายวิชา</a>
         <a href="my_enrollments.php"><i class="bi bi-journal-bookmark-fill"></i> ลงทะเบียนเรียน</a>
-        <a href="grades.php"><i class="bi bi-bar-chart-line-fill"></i> ผลการเรียน</a>
         <a href="notifications.php"><i class="bi bi-bell-fill"></i> แจ้งเตือน</a>
         <a href="logout.php"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</a>
     </div>
@@ -323,7 +319,7 @@ $enrolled = enrolled_map($pdo, $uid);
 
         <div class="card">
             <?php if ($courses): ?>
-                <table>
+                <table id="courses-table">
                     <thead>
                         <tr>
                             <th style="width:160px;">วิชา (Subject)</th>
@@ -398,5 +394,29 @@ $enrolled = enrolled_map($pdo, $uid);
             <?php endif; ?>
         </div>
     </div>
+
+    <script>
+        // บันทึกตำแหน่ง scroll ก่อน submit form
+        document.querySelectorAll('form').forEach(f => {
+            f.addEventListener('submit', () => {
+                localStorage.setItem('scrollPos', window.scrollY);
+            });
+        });
+
+        // เมื่อโหลดหน้าแล้ว เลื่อนไปตำแหน่งที่บันทึกแบบ smooth
+        window.addEventListener('load', () => {
+            const pos = localStorage.getItem('scrollPos');
+            if (pos) {
+                requestAnimationFrame(() => {
+                    window.scrollTo({
+                        top: pos,
+                        behavior: 'smooth'
+                    });
+                    localStorage.removeItem('scrollPos');
+                });
+            }
+        });
+    </script>
 </body>
+
 </html>
