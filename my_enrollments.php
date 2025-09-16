@@ -5,6 +5,34 @@ require_once __DIR__ . '/includes/auth.php';
 require_login();
 $uid = current_user_id();
 
+/* ---------- Query รายวิชาที่ลงทะเบียน (Method 1) ---------- */
+$sql = "
+    SELECT
+        c.course_id,
+        c.title,
+        c.max_seats,
+        c.status        AS course_status,
+        e.enrollment_id,
+        e.status        AS enroll_status,
+        e.enrolled_at,
+        t.name          AS teacher_name,
+        (
+            SELECT COUNT(*)
+            FROM enrollments e2
+            WHERE e2.course_id = c.course_id
+              AND e2.status = 'active'
+        ) AS seats_used
+    FROM enrollments e
+    JOIN courses c   ON c.course_id = e.course_id
+    LEFT JOIN users t ON t.user_id = c.teacher_id
+    WHERE e.user_id = ?
+    ORDER BY e.enrolled_at DESC";
+$st = $pdo->prepare($sql);
+$st->execute([$uid]);
+$courses = $st->fetchAll(PDO::FETCH_ASSOC);   // << เก็บผลลัพธ์เป็น $courses
+$rows = $courses;   // << เพิ่มบรรทัดนี้ เพื่อให้ส่วนที่ใช้ $rows ทำงานต่อได้ทันที
+// echo '<pre>rows = '.count($rows).'</pre>';
+
 $sql = "SELECT e.*, c.title, c.status AS course_status
         FROM enrollments e
         JOIN courses c ON c.course_id = e.course_id

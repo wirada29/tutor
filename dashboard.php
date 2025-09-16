@@ -16,6 +16,25 @@
                         $role  = strtolower($user['role'] ?? 'student');
                         $studentId = $user['user_id'] ?? ($user['id'] ?? null);
 
+                        // หลังบรรทัดนี้ ▼
+                        $studentId = $user['user_id'] ?? ($user['id'] ?? null);
+
+                        // === [A] ตรึง user_id จาก session และ fallback หาโดยอีเมล ===
+                        $user_id = (int)($studentId ?? 0);
+                        if ($user_id <= 0 && !empty($email) && $email !== '-') {
+                            try {
+                                $st = $pdo->prepare("SELECT user_id FROM users WHERE email = ? LIMIT 1");
+                                $st->execute([$email]);
+                                if ($row = $st->fetch(PDO::FETCH_ASSOC)) {
+                                    $user_id = (int)$row['user_id'];
+                                }
+                            } catch (Throwable $e) {
+                                // เงียบไว้เฉย ๆ ถ้าคิวรีพัง จะปล่อย $user_id = 0
+                            }
+                        }
+                        // จากนี้ถ้าต้องใช้ user id ในคิวรีอื่น ๆ ให้ใช้ $user_id
+
+
                         /* ---------- ฟังก์ชันดึงคะแนนจากฐานข้อมูล ---------- */
 
                         /** คะแนนความประพฤติ (0–100)

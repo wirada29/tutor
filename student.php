@@ -29,10 +29,56 @@ $class      = $u['class']      ?? '-';
 $major      = $u['major']      ?? '-';
 
 $current = basename($_SERVER['PHP_SELF']); // ใช้ไฮไลท์เมนูปัจจุบัน
-?>
-<!DOCTYPE html>
-<html lang="th">
 
+/* ============================================================
+   ⬇⬇⬇ ใส่พวก require db.php และ Query รายวิชา "ตรงนี้"
+   ============================================================ */
+require_once __DIR__ . '/config/db.php';
+
+// ดึง user_id จาก session
+$user_id = (int)($u['user_id'] ?? 0);
+if ($user_id <= 0 && $email !== '-') {
+    $st = $pdo->prepare("SELECT user_id FROM users WHERE email = ? LIMIT 1");
+    $st->execute([$email]);
+    if ($row = $st->fetch()) {
+        $user_id = (int)$row['user_id'];
+    }
+}
+
+// Query รายวิชาที่ลงทะเบียน
+$sql = "
+    SELECT
+        c.course_id,
+        c.title,
+        c.max_seats,
+        c.status        AS course_status,
+        e.enrollment_id,
+        e.status        AS enroll_status,
+        e.enrolled_at,
+        t.name          AS teacher_name,
+        (
+            SELECT COUNT(*)
+            FROM enrollments e2
+            WHERE e2.course_id = c.course_id
+              AND e2.status = 'active'
+        ) AS seats_used
+    FROM enrollments e
+    JOIN courses c    ON c.course_id = e.course_id
+    LEFT JOIN users t ON t.user_id   = c.teacher_id
+    WHERE e.user_id = ?
+    ORDER BY e.enrolled_at DESC";
+$st = $pdo->prepare($sql);
+$st->execute([$user_id]);
+$courses = $st->fetchAll(PDO::FETCH_ASSOC);
+
+/* ============================================================
+   ⬆⬆⬆ จบส่วน PHP เตรียมตัวแปร แล้วค่อยลงไป HTML ต่อ
+   ============================================================ */
+?>
+<!doctype html>
+<html lang="th">
+<head> … </head>
+<body>
 <head>
     <meta charset="UTF-8" />
     <title>หน้าของนักเรียน</title>
@@ -186,8 +232,58 @@ $current = basename($_SERVER['PHP_SELF']); // ใช้ไฮไลท์เม�
 
         <div class="card">
             <h3>📚 รายวิชาที่ลงทะเบียน</h3>
-            <p class="muted">— ยังไม่เชื่อมฐานข้อมูล —</p>
+            <?php if (empty($courses)): ?>
+                <p class="muted">ยังไม่มีข้อมูลรายวิชาที่ลงทะเบียน</p>
+            <?php else: ?>
+                <div style="overflow:auto;">
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead>
+                            <tr style="text-align:left; background:#f1f5f9;">
+                                <th style="padding:10px; border-bottom:1px solid #e2e8f0;">ชื่อวิชา</th>
+                                <th style="padding:10px; border-bottom:1px solid #e2e8f0;">ผู้สอน</th>
+                                <th style="padding:10px; border-bottom:1px solid #e2e8f0;">สถานะวิชา</th>
+                                <th style="padding:10px; border-bottom:1px solid #e2e8f0;">ที่นั่งคงเหลือ</th>
+                                <th style="padding:10px; border-bottom:1px solid #e2e8f0;">สถานะลงทะเบียน</th>
+                                <th style="padding:10px; border-bottom:1px solid #e2e8f0;">ลงทะเบียนเมื่อ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($courses as $c):
+                                $used = (int)($c['seats_used'] ?? 0);
+                                $max  = (int)($c['max_seats'] ?? 0);
+                                $left = ($max > 0) ? max(0, $max - $used) : null; // null = ไม่กำหนดจำนวนที่นั่ง
+                            ?>
+                                <tr>
+                                    <td style="padding:10px; border-bottom:1px solid #f1f5f9;">
+                                        <?= htmlspecialchars($c['title'] ?? '-') ?>
+                                    </td>
+                                    <td style="padding:10px; border-bottom:1px solid #f1f5f9;">
+                                        <?= htmlspecialchars($c['teacher_name'] ?? '-') ?>
+                                    </td>
+                                    <td style="padding:10px; border-bottom:1px solid #f1f5f9;">
+                                        <span class="pill"><?= htmlspecialchars($c['course_status'] ?? '-') ?></span>
+                                    </td>
+                                    <td style="padding:10px; border-bottom:1px solid #f1f5f9;">
+                                        <?php if ($max > 0): ?>
+                                            <span class="pill"><?= $left ?> / <?= $max ?></span>
+                                        <?php else: ?>
+                                            <span class="pill">ไม่จำกัด</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td style="padding:10px; border-bottom:1px solid #f1f5f9;">
+                                        <?= htmlspecialchars($c['enroll_status'] ?? '-') ?>
+                                    </td>
+                                    <td style="padding:10px; border-bottom:1px solid #f1f5f9;" class="muted">
+                                        <?= htmlspecialchars($c['enrolled_at'] ?? '-') ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
         </div>
+
     </div>
 
 </body>
