@@ -45,11 +45,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // ➜ เด้งไปตามบทบาท
                     $target = match ($roleDb) {
                         'teacher' => 'teacher_dashboard.php',
-                        'admin'   => 'admin_dashboard.php', // ถ้ายังไม่มีไฟล์นี้จะ fallback ด้านล่าง
-                        default   => 'dashboard.php',       // student
+                        'admin'   => 'admin_dashboard.php', 
+                        default   => 'dashboard.php',
                     };
 
-                    // ถ้าไฟล์ปลายทางไม่มี ให้กลับไป dashboard ปกติ (กันพัง)
                     if (!is_file(__DIR__ . "/{$target}")) {
                         $target = 'dashboard.php';
                     }
@@ -83,11 +82,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             --ok: #16a34a;
             --err: #e11d48;
             --line: #e5e7eb;
+            --brand: #ffb703;
         }
 
-        * {
-            box-sizing: border-box
-        }
+        * { box-sizing: border-box }
 
         body {
             margin: 0;
@@ -118,11 +116,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .hero h2 {
             margin: 0;
-            font-size: 22px;
+            font-size: 28px;
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 10px
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .hero i {
+            font-size: 36px;
+        }
+
+        .brand-title {
+            color: var(--brand);
+            font-size: 32px;
+            font-weight: 900;
+        }
+
+        .login-text {
+            font-size: 22px;
+            font-weight: 600;
+            color: #fff;
         }
 
         .hero p {
@@ -136,174 +151,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background: var(--card);
         }
 
-        label {
-            display: block;
-            font-size: 14px;
-            color: var(--muted);
-            margin: 10px 0 6px
-        }
+        label { display: block; font-size: 14px; color: var(--muted); margin: 10px 0 6px }
+        .group { position: relative }
+        .group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 18px; }
+        input, button { width: 100%; padding: 12px 12px 12px 38px; font-size: 16px; border-radius: 12px; border: 1px solid var(--line); background: #fff; transition: border-color .2s, box-shadow .2s; }
+        .pw-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); border: none; background: transparent; cursor: pointer; color: #64748b; font-size: 18px; padding: 0; }
 
-        .group {
-            position: relative;
-        }
+        .roles { display: flex; gap: 10px; margin: 10px 0 4px }
+        .role { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 8px; border-radius: 10px; border: 1px solid #cbd5e1; cursor: pointer; user-select: none; transition: border-color .2s, box-shadow .2s, transform .05s; background: #f8fafc; }
+        .role:hover { border-color: #5b86e5; box-shadow: 0 0 0 3px rgba(91, 134, 229, .12) }
+        .role input { position: absolute; inset: 0; opacity: 0; cursor: pointer }
+        .role.active { border-color: #5b86e5; box-shadow: 0 0 0 3px rgba(91, 134, 229, .18); background: #fff }
 
-        .group i {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
-            font-size: 18px;
-        }
+        .btn { margin-top: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; background: linear-gradient(90deg, var(--c1), var(--c2)); color: #fff; box-shadow: 0 6px 16px rgba(91, 134, 229, .25); }
+        .btn:hover { filter: brightness(1.05) }
 
-        input,
-        button {
-            width: 100%;
-            padding: 12px 12px 12px 38px;
-            font-size: 16px;
-            border-radius: 12px;
-            border: 1px solid var(--line);
-            background: #fff;
-            transition: border-color .2s, box-shadow .2s;
-        }
+        .subtitle { color: var(--muted); font-size: 14px; text-align: center; margin: 8px 0 }
+        .msg { text-align: center; font-size: 14px; margin: 8px 0 }
+        .msg.err { color: var(--err) }
+        .msg.ok { color: var(--ok) }
 
-        /* ช่องกรอกมี padding-left สำหรับไอคอนด้านซ้าย แต่ด้านขวาไม่ต้องเผื่อเยอะ */
-        input {
-            width: 100%;
-            padding: 12px 40px 12px 38px;
-            /* บน-ขวา-ล่าง-ซ้าย (เพิ่ม 40px เผื่อไอคอนตา) */
-            font-size: 16px;
-            border-radius: 12px;
-            border: 1px solid var(--line);
-            background: #fff;
-            transition: border-color .2s, box-shadow .2s;
-        }
-
-        /* ปุ่มไอคอนตาอยู่ขวาสุด */
-        .pw-toggle {
-            position: absolute;
-            right: 12px;
-            /* ชิดขอบขวา */
-            top: 50%;
-            transform: translateY(-50%);
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            color: #64748b;
-            font-size: 18px;
-            padding: 0;
-            /* เอา margin/padding ออกให้ชิดจริง ๆ */
-        }
-
-
-        /* roles */
-        .roles {
-            display: flex;
-            gap: 10px;
-            margin: 10px 0 4px
-        }
-
-        .role {
-            flex: 1;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 10px 8px;
-            border-radius: 10px;
-            border: 1px solid #cbd5e1;
-            cursor: pointer;
-            user-select: none;
-            transition: border-color .2s, box-shadow .2s, transform .05s;
-            background: #f8fafc;
-        }
-
-        .role:hover {
-            border-color: #5b86e5;
-            box-shadow: 0 0 0 3px rgba(91, 134, 229, .12)
-        }
-
-        .role input {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer
-        }
-
-        .role.active {
-            border-color: #5b86e5;
-            box-shadow: 0 0 0 3px rgba(91, 134, 229, .18);
-            background: #fff
-        }
-
-        .btn {
-            margin-top: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px;
-            font-weight: 700;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            background: linear-gradient(90deg, var(--c1), var(--c2));
-            color: #fff;
-            box-shadow: 0 6px 16px rgba(91, 134, 229, .25);
-        }
-
-        .btn:hover {
-            filter: brightness(1.05)
-        }
-
-        .subtitle {
-            color: var(--muted);
-            font-size: 14px;
-            text-align: center;
-            margin: 8px 0
-        }
-
-        .msg {
-            text-align: center;
-            font-size: 14px;
-            margin: 8px 0
-        }
-
-        .msg.err {
-            color: var(--err)
-        }
-
-        .msg.ok {
-            color: var(--ok)
-        }
-
-        .link {
-            text-align: center;
-            margin-top: 12px;
-            font-size: 14px;
-            color: var(--muted)
-        }
-
-        .link a {
-            color: #5b86e5;
-            font-weight: 700;
-            text-decoration: none
-        }
+        .link { text-align: center; margin-top: 12px; font-size: 14px; color: var(--muted) }
+        .link a { color: #5b86e5; font-weight: 700; text-decoration: none }
     </style>
 </head>
 
 <body>
     <div class="wrap">
         <div class="hero">
-            <h2><i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ</h2>
+            <h2>
+                <i class="bi bi-mortarboard-fill"></i>
+                <span class="brand-title">สถาบันติวเตอร์</span>
+                <span class="login-text">| เข้าสู่ระบบ</span>
+            </h2>
             <p>เลือกบทบาทให้ตรงกับสิทธิ์ของบัญชีคุณ</p>
         </div>
 
         <div class="card">
             <?php if (!empty($_SESSION['flash'])): ?>
-                <p class="msg ok"><?= htmlspecialchars($_SESSION['flash']);
-                                    unset($_SESSION['flash']); ?></p>
+                <p class="msg ok"><?= htmlspecialchars($_SESSION['flash']); unset($_SESSION['flash']); ?></p>
             <?php endif; ?>
             <?php if (isset($error)): ?>
                 <p class="msg err"><?= htmlspecialchars($error) ?></p>
@@ -318,14 +204,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <label>รหัสผ่าน</label>
-                <div>
-                    <div class="group">
-                        <i class="bi bi-shield-lock-fill"></i>
-                        <input type="password" name="password" placeholder=" ••••••••" required>
-
-                    </div>
+                <div class="group">
+                    <i class="bi bi-shield-lock-fill"></i>
+                    <input type="password" name="password" placeholder=" ••••••••" required>
                 </div>
-
 
                 <label>บทบาท</label>
                 <div class="roles" id="roles">
@@ -354,20 +236,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script>
-        // เปลี่ยนลิงก์สมัครตามบทบาท
         const ROLE_LINK = {
-            student: {
-                href: 'register_student.php',
-                text: 'ลงทะเบียน (เฉพาะนักเรียน)'
-            },
-            teacher: {
-                href: 'register_teacher.php',
-                text: 'ลงทะเบียน (เฉพาะครู)'
-            },
-            admin: {
-                href: 'register_admin.php',
-                text: 'ลงทะเบียน (เฉพาะแอดมิน)'
-            }
+            student: { href: 'register_student.php', text: 'ลงทะเบียน (เฉพาะนักเรียน)' },
+            teacher: { href: 'register_teacher.php', text: 'ลงทะเบียน (เฉพาะครู)' },
+            admin: { href: 'register_admin.php', text: 'ลงทะเบียน (เฉพาะแอดมิน)' }
         };
         const regLink = document.getElementById('regLink');
         const roleRadios = document.querySelectorAll('input[name="role"]');
@@ -406,9 +278,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }));
 
-        // ตั้งต้นตามค่าที่ PHP เรนเดอร์มา
         document.addEventListener('DOMContentLoaded', syncUI);
     </script>
 </body>
-
 </html>
