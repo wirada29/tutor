@@ -103,11 +103,12 @@ th{background:#eef2ff}
 
   <!-- ส่วนของแอดมิน -->
   <div style="height:1px;background:rgba(255,255,255,.25);margin:10px 0"></div>
-  <a href="admin_dashboard.php" class="active"><i class="bi bi-speedometer2"></i> หน้าผู้ดูแล</a>
-  <a href="admin_users.php"><i class="bi bi-people-fill"></i> ผู้ใช้ทั้งหมด</a>
-  <a href="register_teacher.php"><i class="bi bi-person-plus"></i> สร้างบัญชีครู</a>
-  <a href="register_admin.php"><i class="bi bi-shield-plus"></i> สร้างบัญชีแอดมิน</a>
-
+   <a href="admin_dashboard.php" class="active"><i class="bi bi-speedometer2"></i> หน้าผู้ดูแล</a>
+    <a href="admin_users.php"><i class="bi bi-people-fill"></i> ผู้ใช้ทั้งหมด</a>
+      <a href="admin/courses_manage.php"><i class="bi bi-toggle-on"></i> จัดการรายวิชา</a>
+    <a href="register_teacher.php"><i class="bi bi-person-plus"></i> สร้างบัญชีครู</a>
+    <a href="register_admin.php"><i class="bi bi-shield-plus"></i> สร้างบัญชีแอดมิน</a>
+  
   <div style="height:1px;background:rgba(255,255,255,.25);margin:10px 0"></div>
   <a href="logout.php"><i class="bi bi-box-arrow-right"></i> ออกจากระบบ</a>
 </div>
